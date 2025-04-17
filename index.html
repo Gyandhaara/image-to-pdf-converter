@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<!--
+  ========================================================================
+  Image to PDF Converter - Technology Stack & Open Source Acknowledgments
+  ========================================================================
+
+  Core Technologies:
+  -----------------
+  - jsPDF (v2.5.1)          : Client-side PDF generation library (MIT License)
+  - Tailwind CSS (v3.x)     : Utility-first CSS framework (MIT License)
+  - Font Awesome (v6.4.0)   : Icon toolkit (CC BY 4.0 License)
+  - HTML5 File API          : Native browser API for file handling
+  - JavaScript ES6          : Core programming language
+
+  Open Source Components:
+  ----------------------
+  - jsPDF Library           : https://github.com/parallax/jsPDF
+  - Tailwind CSS            : https://github.com/tailwindlabs/tailwindcss
+  - Font Awesome Free       : https://github.com/FortAwesome/Font-Awesome
+  - GitHub                  : Used for project hosting and version control
+
+  Development Approach:
+  --------------------
+  - 100% client-side processing (no server-side code)
+  - Zero-data-retention architecture
+  - Responsive design for all device sizes
+  - Privacy-focused implementation
+
+  License Information:
+  -------------------
+  This project incorporates open source software licensed under:
+  - MIT License (jsPDF, Tailwind CSS)
+  - Creative Commons Attribution 4.0 (Font Awesome)
+
+  Copyright Notice:
+  ----------------
+  © 2025 GyanDhaara.in | All Rights Reserved
+  ========================================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image to PDF Converter</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Custom styles for scrollable tabs */
+    .tabs-container {
+      position: relative;
+    }
+    .tabs-scroll {
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      scroll-behavior: smooth;
+      margin-bottom: -1px;
+    }
+    .tabs-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    .tab-button {
+      flex: 0 0 auto;
+      padding: 0.5rem 1rem;
+      margin-right: 0.25rem;
+      font-weight: 500;
+      color: #6b7280;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tab-button:hover {
+      color: #3b82f6;
+    }
+    .tab-button.active {
+      color: #3b82f6;
+      border-bottom-color: #3b82f6;
+    }
+    
+    /* Drop zone styling */
+    .drop-area {
+      border: 3px dashed #3b82f6;
+      border-radius: 5px;
+      padding: 30px;
+      text-align: center;
+      margin-bottom: 20px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    
+    .drop-area.highlight {
+      border-color: #10b981;
+      background-color: #f0f8ff;
+    }
+    
+    /* Preview items */
+    .preview-item {
+      position: relative;
+      width: 150px;
+      height: 150px;
+      border: 1px solid #ddd;
+      overflow: hidden;
+    }
+    
+    .preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background-color: #f9f9f9;
+    }
+    
+    .remove-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background-color: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    /* PDF preview styling */
+    .pdf-preview-container {
+      width: 100%;
+      height: 400px;
+      border: 1px solid #ddd;
+      margin-top: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pdf-preview-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .file-info {
+      background-color: #f8fafc;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 15px;
+    }
+
+    .file-info-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .file-info-item:last-child {
+      border-bottom: none;
+    }
+
+    .file-info-label {
+      font-weight: 600;
+      color: #4b5563;
+    }
+
+    .file-info-value {
+      color: #1f2937;
+    }
+    
+    /* Mobile-specific styles */
+    @media (max-width: 768px) {
+      .mobile-container {
+        max-width: 100% !important;
+        padding-left: 0;
+        padding-right: 0;
+      }
+      .mobile-content {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 0;
+        margin-left: 0;
+        margin-right: 0;
+      }
+      .mobile-padding {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+
+      .pdf-preview-container {
+        height: 300px;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <div class="mobile-container max-w-4xl mx-auto p-0 md:p-6">
+    <div class="mobile-content bg-white rounded-xl shadow-md overflow-hidden">
+      <div class="mobile-padding p-6">
+        <h1 class="text-2xl md:text-3xl font-semibold text-center mb-6 text-blue-600">
+          <i class="fas fa-file-pdf mr-2"></i>Image to PDF Converter
+        </h1>
+
+        <!-- Tabs Navigation with Scroll -->
+        <div class="tabs-container mb-6">
+          <div class="tabs-scroll" id="tabsScroll">
+            <button id="converterTab" class="tab-button active">
+              <i class="fas fa-exchange-alt mr-2"></i>Converter
+            </button>
+            <button id="legalTab" class="tab-button">
+              <i class="fas fa-gavel mr-2"></i>Legal Information
+            </button>
+            <button id="creditsTab" class="tab-button">
+              <i class="fas fa-users mr-2"></i>Credits
+            </button>
+          </div>
+        </div>
+
+        <!-- Converter Tab Content -->
+        <div id="converterContent">
+          <!-- Drag & Drop Zone -->
+          <div id="dropZone" class="drop-area">
+            <div class="flex flex-col items-center justify-center space-y-3">
+              <i class="fas fa-cloud-upload-alt text-4xl text-blue-400"></i>
+              <p class="text-gray-500 font-medium">Click to browse or drag & drop images</p>
+              <p class="text-xs text-gray-400">Supports: JPG, PNG, WEBP, BMP, GIF</p>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" multiple class="hidden" />
+          </div>
+
+          <!-- PDF Options -->
+          <div class="options space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label for="pageSize" class="block text-sm font-medium mb-1">Page Size:</label>
+                <select id="pageSize" class="w-full p-2 border border-gray-300 rounded-md">
+                  <option value="a4">A4</option>
+                  <option value="letter">Letter</option>
+                  <option value="a5">A5</option>
+                </select>
+              </div>
+              <div>
+                <label for="orientation" class="block text-sm font-medium mb-1">Orientation:</label>
+                <select id="orientation" class="w-full p-2 border border-gray-300 rounded-md">
+                  <option value="portrait">Portrait</option>
+                  <option value="landscape">Landscape</option>
+                </select>
+              </div>
+              <div>
+                <label for="margin" class="block text-sm font-medium mb-1">Margin (mm):</label>
+                <input type="number" id="margin" value="10" min="0" class="w-full p-2 border border-gray-300 rounded-md">
+              </div>
+            </div>
+          </div>
+
+          <!-- Image Previews -->
+          <div class="preview-container mt-6" id="previewContainer"></div>
+
+          <!-- Controls -->
+          <div class="controls mt-6 flex flex-col sm:flex-row gap-3">
+            <button id="clearBtn" class="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition" disabled>
+              <i class="fas fa-trash-alt mr-2"></i>Clear All
+            </button>
+            <button id="convertBtn" class="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2" disabled>
+              <i class="fas fa-file-pdf mr-2"></i>Convert to PDF
+            </button>
+          </div>
+
+          <!-- Results Section (Initially Hidden) -->
+          <div id="resultsSection" class="hidden mt-8">
+            <h3 class="text-lg font-semibold mb-4 text-gray-700">
+              <i class="fas fa-file-pdf mr-2 text-red-500"></i>PDF Preview
+            </h3>
+            
+            <div class="pdf-preview-container">
+              <iframe id="pdfPreview" class="pdf-preview-iframe"></iframe>
+            </div>
+
+            <div class="file-info">
+              <div class="file-info-item">
+                <span class="file-info-label">File Name:</span>
+                <span id="pdfFileName" class="file-info-value">converted_images.pdf</span>
+              </div>
+              <div class="file-info-item">
+                <span class="file-info-label">File Size:</span>
+                <span id="pdfFileSize" class="file-info-value">0 KB</span>
+              </div>
+              <div class="file-info-item">
+                <span class="file-info-label">File Type:</span>
+                <span class="file-info-value">PDF Document</span>
+              </div>
+              <div class="file-info-item">
+                <span class="file-info-label">Number of Pages:</span>
+                <span id="pdfPageCount" class="file-info-value">0</span>
+              </div>
+              <div class="file-info-item">
+                <span class="file-info-label">Created:</span>
+                <span id="pdfCreatedDate" class="file-info-value">Just now</span>
+              </div>
+            </div>
+
+            <div class="mt-6 flex flex-col sm:flex-row gap-3">
+              <button id="downloadBtn" class="flex-1 bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2">
+                <i class="fas fa-download mr-2"></i>Download PDF
+              </button>
+              <button id="newConversionBtn" class="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                <i class="fas fa-redo mr-2"></i>New Conversion
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legal Information Tab Content -->
+        <div id="legalContent" class="hidden">
+          <div class="space-y-6">
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <h3 class="font-semibold text-blue-700 mb-2"><i class="fas fa-copyright mr-2"></i>Copyright Notice</h3>
+              <p class="text-sm text-gray-700">All images processed by this tool remain the exclusive property of their respective copyright holders. This service does not claim ownership, license, or rights to any uploaded content. Users must ensure they possess all necessary permissions, releases, and rights before uploading any images. Unauthorized use of copyrighted material is strictly prohibited and may result in legal action by the rightful owners.</p>
+            </div>
+
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <h3 class="font-semibold text-blue-700 mb-2"><i class="fas fa-balance-scale mr-2"></i>Terms of Use</h3>
+              <p class="text-sm text-gray-700">By accessing this tool, you agree to comply with all applicable laws regarding copyright and intellectual property. You expressly warrant that any content you upload: (1) you own or have legal authorization to use, (2) does not infringe any third-party rights, and (3) complies with all relevant regulations. Prohibited uses include but are not limited to: processing illegal content, infringing materials, or content violating privacy rights. We reserve the right to terminate access for any violation of these terms.</p>
+            </div>
+
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <h3 class="font-semibold text-blue-700 mb-2"><i class="fas fa-lock mr-2"></i>Privacy & Data Protection</h3>
+              <p class="text-sm text-gray-700">This tool operates entirely client-side in your browser. No images are transmitted to, stored on, or processed by our servers. We implement a strict zero-data-retention policy - all processing occurs locally in your browser session and is automatically discarded when you close the tab. We do not collect, analyze, or monetize your data in any way. For transparency: no cookies, trackers, or analytics are employed in this application.</p>
+            </div>
+
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <h3 class="font-semibold text-blue-700 mb-2"><i class="fas fa-gavel mr-2"></i>DMCA Compliance & Copyright Infringement</h3>
+              <p class="text-sm text-gray-700">We respect intellectual property rights and comply with the Digital Millennium Copyright Act (DMCA). If you believe your copyrighted work has been improperly processed through this tool, please submit a written notice containing: (1) Your contact information, (2) Detailed description of the copyrighted work, (3) Identification of the allegedly infringing material, (4) Statement of good faith belief, and (5) Verification of accuracy under penalty of perjury. Submit notices to our designated agent at info@gyandhaara.in. We will respond to valid DMCA notices within 72 hours.</p>
+            </div>
+
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <h3 class="font-semibold text-blue-700 mb-2"><i class="fas fa-shield-alt mr-2"></i>Limitation of Liability</h3>
+              <p class="text-sm text-gray-700">THIS TOOL IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND. WE EXPLICITLY DISCLAIM ALL LIABILITY FOR: (1) ANY UNAUTHORIZED USE OF COPYRIGHTED MATERIALS BY USERS, (2) TECHNICAL ISSUES RESULTING IN DATA LOSS, (3) ANY THIRD-PARTY CLAIMS ARISING FROM USER CONTENT. By using this service, you agree to indemnify and hold harmless the developers from any claims, damages, or expenses resulting from your violation of these terms. Maximum liability is limited to direct damages not exceeding ₹1000.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Credits Tab Content -->
+        <div id="creditsContent" class="hidden">
+          <div class="space-y-6">
+            <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+              <h3 class="font-semibold text-green-700 mb-2"><i class="fas fa-code mr-2"></i>Technologies Used</h3>
+              <div class="flex flex-wrap gap-4 mt-3">
+                <div class="flex items-center">
+                  <i class="fab fa-js-square text-yellow-500 text-2xl mr-2"></i>
+                  <span class="text-sm">jsPDF Library</span>
+                </div>
+                <div class="flex items-center">
+                  <i class="fab fa-html5 text-orange-500 text-2xl mr-2"></i>
+                  <span class="text-sm">HTML5 File API</span>
+                </div>
+                <div class="flex items-center">
+                  <i class="fab fa-css3-alt text-blue-500 text-2xl mr-2"></i>
+                  <span class="text-sm">Tailwind CSS</span>
+                </div>
+                <div class="flex items-center">
+                  <i class="fas fa-mobile-alt text-purple-500 text-2xl mr-2"></i>
+                  <span class="text-sm">Responsive Design</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+              <h3 class="font-semibold text-green-700 mb-2"><i class="fas fa-heart mr-2"></i>Open Source Acknowledgements</h3>
+              <ul class="text-sm text-gray-700 space-y-2">
+                <li><strong>jsPDF</strong> - MIT Licensed PDF generation library</li>
+                <li><strong>Tailwind CSS</strong> - MIT Licensed utility framework</li>
+                <li><strong>Font Awesome</strong> - CC BY 4.0 Licensed icons</li>
+                <li><strong>GitHub</strong> - For project hosting and version control</li>
+              </ul>
+            </div>
+
+            <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+              <h3 class="font-semibold text-green-700 mb-2"><i class="fas fa-users mr-2"></i>Development Team</h3>
+              <p class="text-sm text-gray-700">This privacy-focused tool was developed by the GyanDhaara.in technical team with special attention to:</p>
+              <ul class="text-sm text-gray-700 mt-2 space-y-1 list-disc list-inside">
+                <li>Client-side only processing architecture</li>
+                <li>Zero-data-retention policy implementation</li>
+                <li>Copyright protection mechanisms</li>
+                <li>Cross-platform compatibility</li>
+              </ul>
+            </div>
+
+            <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+              <h3 class="font-semibold text-green-700 mb-2"><i class="fas fa-hands-helping mr-2"></i>Special Thanks</h3>
+              <p class="text-sm text-gray-700">We extend our gratitude to:</p>
+              <ul class="text-sm text-gray-700 mt-2 space-y-1 list-disc list-inside">
+                <li>The open source community for their invaluable contributions</li>
+                <li>Our beta testers for quality assurance feedback</li>
+                <li>Web standards organizations for enabling client-side solutions</li>
+                <li>Our users for supporting privacy-conscious tools</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center text-xs text-gray-500 mt-4 space-y-1">
+      <div>© 2025 Professional Image to PDF Converter | GyanDhaara.in | All rights reserved</div>
+      <div class="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
+        <a href="https://gyandhaara.in/en/terms-and-conditions/" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           class="hover:text-blue-600 transition-colors">
+          Terms and Conditions
+        </a>
+        <a href="https://gyandhaara.in/en/privacy-policy-2/" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           class="hover:text-blue-600 transition-colors">
+          Privacy Policy
+        </a>
+        <a href="https://gyandhaara.in/en/disclaimer/" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           class="hover:text-blue-600 transition-colors">
+          Disclaimer
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Modal -->
+  <div id="loadingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-6 rounded-lg max-w-sm w-full text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+      <p class="font-medium">Creating your PDF...</p>
+      <p id="loadingProgress" class="text-sm text-gray-500 mt-1">0%</p>
+    </div>
+  </div>
+
+  <script>
+    // Initialize jsPDF
+    const { jsPDF } = window.jspdf;
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      // DOM Elements
+      const elements = {
+        fileInput: document.getElementById('fileInput'),
+        dropZone: document.getElementById('dropZone'),
+        pageSize: document.getElementById('pageSize'),
+        orientation: document.getElementById('orientation'),
+        margin: document.getElementById('margin'),
+        previewContainer: document.getElementById('previewContainer'),
+        clearBtn: document.getElementById('clearBtn'),
+        convertBtn: document.getElementById('convertBtn'),
+        downloadBtn: document.getElementById('downloadBtn'),
+        newConversionBtn: document.getElementById('newConversionBtn'),
+        resultsSection: document.getElementById('resultsSection'),
+        pdfPreview: document.getElementById('pdfPreview'),
+        pdfFileName: document.getElementById('pdfFileName'),
+        pdfFileSize: document.getElementById('pdfFileSize'),
+        pdfPageCount: document.getElementById('pdfPageCount'),
+        pdfCreatedDate: document.getElementById('pdfCreatedDate'),
+        converterTab: document.getElementById('converterTab'),
+        legalTab: document.getElementById('legalTab'),
+        creditsTab: document.getElementById('creditsTab'),
+        converterContent: document.getElementById('converterContent'),
+        legalContent: document.getElementById('legalContent'),
+        creditsContent: document.getElementById('creditsContent'),
+        loadingModal: document.getElementById('loadingModal'),
+        loadingProgress: document.getElementById('loadingProgress'),
+        tabsScroll: document.getElementById('tabsScroll')
+      };
+
+      // State
+      let state = {
+        files: [],
+        pdfBlob: null,
+        pdfUrl: null
+      };
+
+      // Event Listeners
+      setupEventListeners();
+
+      function setupEventListeners() {
+        // File input
+        elements.fileInput.addEventListener('change', handleFileSelect);
+        
+        // Drag and drop
+        elements.dropZone.addEventListener('click', () => elements.fileInput.click());
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+          elements.dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+          elements.dropZone.addEventListener(eventName, highlightDropZone, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+          elements.dropZone.addEventListener(eventName, unhighlightDropZone, false);
+        });
+        elements.dropZone.addEventListener('drop', handleDrop, false);
+
+        // Buttons
+        elements.clearBtn.addEventListener('click', resetTool);
+        elements.convertBtn.addEventListener('click', convertToPdf);
+        elements.downloadBtn.addEventListener('click', downloadPdf);
+        elements.newConversionBtn.addEventListener('click', startNewConversion);
+        
+        // Tab switching
+        elements.converterTab.addEventListener('click', () => switchTab('converter'));
+        elements.legalTab.addEventListener('click', () => switchTab('legal'));
+        elements.creditsTab.addEventListener('click', () => switchTab('credits'));
+      }
+
+      function switchTab(tabName) {
+        // Reset all tabs
+        document.querySelectorAll('.tab-button').forEach(tab => {
+          tab.classList.remove('active', 'text-blue-600', 'border-blue-600');
+        });
+        elements.converterContent.classList.add('hidden');
+        elements.legalContent.classList.add('hidden');
+        elements.creditsContent.classList.add('hidden');
+        
+        // Activate selected tab
+        const activeTab = document.getElementById(`${tabName}Tab`);
+        activeTab.classList.add('active', 'text-blue-600', 'border-blue-600');
+        document.getElementById(`${tabName}Content`).classList.remove('hidden');
+        
+        // Scroll tab into view if needed
+        activeTab.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center'
+        });
+      }
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      function highlightDropZone() {
+        elements.dropZone.classList.add('border-blue-500', 'bg-blue-50');
+      }
+
+      function unhighlightDropZone() {
+        elements.dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+      }
+
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+          handleFiles(Array.from(files).filter(file => file.type.match('image.*')));
+        }
+      }
+
+      function handleFileSelect(e) {
+        const files = e.target.files;
+        if (files.length > 0) {
+          handleFiles(Array.from(files));
+        }
+      }
+
+      function handleFiles(newFiles) {
+        // Filter only image files
+        const imageFiles = newFiles.filter(file => file.type.match('image.*'));
+        
+        if (imageFiles.length === 0) {
+          showAlert('Please upload valid image files', 'error');
+          return;
+        }
+        
+        // Add to existing files
+        state.files = [...state.files, ...imageFiles];
+        
+        // Display previews
+        renderPreviews();
+        updateButtons();
+      }
+
+      function renderPreviews() {
+        elements.previewContainer.innerHTML = '';
+        
+        state.files.forEach((file, index) => {
+          const reader = new FileReader();
+          
+          reader.onload = (e) => {
+            const previewItem = document.createElement('div');
+            previewItem.className = 'preview-item';
+            previewItem.draggable = true;
+            previewItem.dataset.index = index;
+            
+            // Add drag events for reordering
+            previewItem.addEventListener('dragstart', handleDragStart);
+            previewItem.addEventListener('dragover', handleDragOver);
+            previewItem.addEventListener('drop', handleDrop);
+            previewItem.addEventListener('dragend', handleDragEnd);
+            
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.alt = file.name;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-btn';
+            removeBtn.innerHTML = '×';
+            removeBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              removeImage(index);
+            });
+            
+            previewItem.appendChild(img);
+            previewItem.appendChild(removeBtn);
+            elements.previewContainer.appendChild(previewItem);
+          };
+          
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function removeImage(index) {
+        state.files.splice(index, 1);
+        renderPreviews();
+        updateButtons();
+      }
+
+      function updateButtons() {
+        elements.clearBtn.disabled = state.files.length === 0;
+        elements.convertBtn.disabled = state.files.length === 0;
+        elements.resultsSection.classList.add('hidden');
+      }
+
+      async function convertToPdf() {
+        if (state.files.length === 0) {
+          showAlert('Please upload images first', 'error');
+          return;
+        }
+
+        showLoading(true);
+        
+        // Get user options
+        const pageSize = elements.pageSize.value;
+        const orientation = elements.orientation.value;
+        const margin = parseInt(elements.margin.value);
+        
+        // Create PDF
+        const pdf = new jsPDF({
+          orientation: orientation,
+          unit: 'mm',
+          format: pageSize
+        });
+        
+        // Process each image
+        for (let i = 0; i < state.files.length; i++) {
+          const file = state.files[i];
+          const progress = Math.round(((i + 1) / state.files.length) * 100);
+          elements.loadingProgress.textContent = `${progress}%`;
+          
+          const imgData = await readFileAsDataURL(file);
+          
+          // Add image to PDF
+          const img = new Image();
+          img.src = imgData;
+          
+          await new Promise((resolve) => {
+            img.onload = () => {
+              const pageWidth = pdf.internal.pageSize.getWidth();
+              const pageHeight = pdf.internal.pageSize.getHeight();
+              
+              // Calculate dimensions to fit image with margins
+              const imgWidth = img.width;
+              const imgHeight = img.height;
+              
+              const ratio = Math.min(
+                (pageWidth - margin * 2) / imgWidth,
+                (pageHeight - margin * 2) / imgHeight
+              );
+              
+              const width = imgWidth * ratio;
+              const height = imgHeight * ratio;
+              
+              const x = (pageWidth - width) / 2;
+              const y = (pageHeight - height) / 2;
+              
+              pdf.addImage(imgData, 'JPEG', x, y, width, height);
+              
+              if (i < state.files.length - 1) {
+                pdf.addPage();
+              }
+              
+              resolve();
+            };
+          });
+        }
+      
+        // Generate PDF blob and URL
+        const pdfBlob = pdf.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
+        // Update state
+        state.pdfBlob = pdfBlob;
+        state.pdfUrl = pdfUrl;
+        
+        // Show results
+        showResults(pdfBlob, pdfUrl);
+        showLoading(false);
+      }
+
+      function showResults(pdfBlob, pdfUrl) {
+        // Display PDF preview
+        elements.pdfPreview.src = pdfUrl;
+        
+        // Update file info
+        elements.pdfFileName.textContent = 'converted_images.pdf';
+        elements.pdfFileSize.textContent = formatFileSize(pdfBlob.size);
+        elements.pdfPageCount.textContent = state.files.length;
+        elements.pdfCreatedDate.textContent = 'Just now';
+        
+        // Show results section
+        elements.resultsSection.classList.remove('hidden');
+        
+        // Scroll to results
+        elements.resultsSection.scrollIntoView({ behavior: 'smooth' });
+      }
+
+      function downloadPdf() {
+        if (!state.pdfBlob) return;
+        
+        const a = document.createElement('a');
+        a.href = state.pdfUrl;
+        a.download = 'converted_images.pdf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      function startNewConversion() {
+        // Clear existing files and results
+        state.files = [];
+        state.pdfBlob = null;
+        if (state.pdfUrl) {
+          URL.revokeObjectURL(state.pdfUrl);
+          state.pdfUrl = null;
+        }
+        
+        // Reset UI
+        elements.fileInput.value = '';
+        elements.previewContainer.innerHTML = '';
+        elements.resultsSection.classList.add('hidden');
+        updateButtons();
+      }
+
+      function resetTool() {
+        startNewConversion();
+      }
+
+      function readFileAsDataURL(file) {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function formatFileSize(bytes) {
+        if (bytes < 1024) return `${bytes} B`;
+        else if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        else return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+      }
+
+      function showLoading(show) {
+        elements.loadingModal.classList.toggle('hidden', !show);
+      }
+
+      function showAlert(message, type) {
+        alert(`${type.toUpperCase()}: ${message}`);
+      }
+
+      // Drag and drop reordering functions
+      let draggedItem = null;
+      
+      function handleDragStart(e) {
+        draggedItem = this;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.innerHTML);
+        this.style.opacity = '0.4';
+      }
+      
+      function handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+      }
+      
+      function handleDrop(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        
+        if (draggedItem !== this) {
+          // Swap the files in the array
+          const fromIndex = parseInt(draggedItem.dataset.index);
+          const toIndex = parseInt(this.dataset.index);
+          
+          // Swap files
+          [state.files[fromIndex], state.files[toIndex]] = [state.files[toIndex], state.files[fromIndex]];
+          
+          // Re-render preview
+          renderPreviews();
+        }
+        
+        return false;
+      }
+      
+      function handleDragEnd() {
+        this.style.opacity = '1';
+      }
+    });
+  </script>
+  </script>
+  <script>
+  function sendHeight() {
+    const height = document.body.scrollHeight;
+    parent.postMessage({ type: "setHeight", height: height }, "*");
+  }
+
+  window.addEventListener("load", sendHeight);
+  window.addEventListener("resize", sendHeight);
+  setInterval(sendHeight, 500); // height update har 0.5 sec me
+</script>
+</body>
+</html>
